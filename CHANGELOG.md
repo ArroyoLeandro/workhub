@@ -4,6 +4,14 @@ All notable changes to Workhub 2 are listed here. Entries from 2.0.0-alpha.2 on 
 [release-please](https://github.com/googleapis/release-please) from the Conventional Commits on
 `main`; see the release process in [CONTRIBUTING.md](CONTRIBUTING.md#releases).
 
+## [2.0.0-alpha.30](https://github.com/SoldierIced/workhub/compare/v2.0.0-alpha.29...v2.0.0-alpha.30) (2026-11-14)
+
+
+### Bug Fixes
+
+* **app:** give sessions a UTF-8 locale so copied text keeps accents ([868bde1](https://github.com/SoldierIced/workhub/commit/868bde19905461dcd9957a3b37b0f5e7119fac56))
+* **app:** give sessions a UTF-8 locale so copied text keeps accents ([3b68010](https://github.com/SoldierIced/workhub/commit/3b680101c717c5c0c1b2582386fe4eac53edb0f8))
+
 ## [2.0.0-alpha.29](https://github.com/SoldierIced/workhub/compare/v2.0.0-alpha.28...v2.0.0-alpha.29) (2026-11-14)
 
 

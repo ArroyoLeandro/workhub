@@ -12,7 +12,7 @@ import { JsonConfigStore } from '@workhub/adapters/config-json'
 import { SafeStorageSecretStore } from '@workhub/adapters/secrets-electron'
 import { TerminalRuntime } from '@workhub/adapters/agent-terminal'
 import { createCliRunner } from '@workhub/adapters/cli'
-import { augmentedPath, readLoginShellPath } from '@workhub/adapters/login-path'
+import { augmentedPath, readLoginShellPath, utf8LocaleEnv } from '@workhub/adapters/login-path'
 import { readNotificationPermission } from '@workhub/adapters/notification-permission'
 import { ClaudeTranscriptReader, copyClaudeSession, readClaudeHandoffFacts } from '@workhub/adapters/transcript-claude'
 import { CodexPlanUsageReader, CodexSessionHistory, CodexTranscriptReader } from '@workhub/adapters/transcript-codex'
@@ -352,6 +352,7 @@ const bridgeDir = app.isPackaged ? join(process.resourcesPath, 'bridge') : join(
  * app opened from the Finder or the Dock finds the same CLIs as a terminal does. Until it is read,
  * and when it cannot be, the inherited PATH plus the usual CLI folders. Windows: unchanged.
  */
+Object.assign(process.env, utf8LocaleEnv(process.platform, process.env))
 let cliPath = augmentedPath({ platform: process.platform, inherited: process.env['PATH'], loginShell: null })
 void readLoginShellPath().then((loginShell) => {
   if (loginShell) cliPath = augmentedPath({ platform: process.platform, inherited: process.env['PATH'], loginShell })

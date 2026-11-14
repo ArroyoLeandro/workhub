@@ -78,3 +78,15 @@ export async function readLoginShellPath(options: { platform?: NodeJS.Platform; 
 export function pathKeyOf(env: Record<string, string | undefined>): string {
   return Object.keys(env).find((k) => k.toUpperCase() === 'PATH') ?? 'PATH'
 }
+
+/**
+ * The locale variable an app opened from the Finder or the Dock lacks: without one, macOS tools
+ * such as `pbcopy` read text as Mac Roman, so what an agent copies (accents, box drawing) pastes
+ * garbled elsewhere. A terminal sets it; Workhub sets a UTF-8 character type when no locale variable
+ * is set (`UTF-8` on macOS, `C.UTF-8` elsewhere). Nothing on Windows, or when the user set one.
+ */
+export function utf8LocaleEnv(platform: NodeJS.Platform, env: Record<string, string | undefined>): Record<string, string> {
+  if (platform === 'win32') return {}
+  if (env['LC_ALL'] || env['LC_CTYPE'] || env['LANG']) return {}
+  return { LC_CTYPE: platform === 'darwin' ? 'UTF-8' : 'C.UTF-8' }
+}

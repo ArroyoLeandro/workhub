@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { BUILTIN_AGENTS } from '@workhub/core'
 import type * as nodePty from 'node-pty'
 import { TerminalRuntime } from '../src/agent-terminal'
-import { augmentedPath, parsePrintedPath, PRINT_PATH_COMMAND, readLoginShellPath } from '../src/shared/login-path'
+import { augmentedPath, parsePrintedPath, PRINT_PATH_COMMAND, readLoginShellPath, utf8LocaleEnv } from '../src/shared/login-path'
 
 const launchd = '/usr/bin:/bin:/usr/sbin:/sbin'
 
@@ -65,5 +65,15 @@ describe('TerminalRuntime PATH', () => {
     const sep = process.platform === 'win32' ? ';' : ':'
     expect(env![key]).toBe(['/opt/homebrew/bin:/usr/bin', '/bundle/claude'].join(sep))
     expect(env!['ACME']).toBe('1')
+  })
+})
+
+describe('utf8LocaleEnv', () => {
+  it('sets a UTF-8 character type only when no locale variable is set, and never on Windows', () => {
+    expect(utf8LocaleEnv('darwin', {})).toEqual({ LC_CTYPE: 'UTF-8' })
+    expect(utf8LocaleEnv('linux', { LANG: '' })).toEqual({ LC_CTYPE: 'C.UTF-8' })
+    expect(utf8LocaleEnv('darwin', { LANG: 'es_AR.UTF-8' })).toEqual({})
+    expect(utf8LocaleEnv('darwin', { LC_ALL: 'C' })).toEqual({})
+    expect(utf8LocaleEnv('win32', {})).toEqual({})
   })
 })

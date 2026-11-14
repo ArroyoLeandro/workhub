@@ -1,14 +1,15 @@
 name: release
 
-# Builds the installers for tag v<version> (the root package.json's version) on every OS and
-# attaches them to a DRAFT release. Review it, then publish it from GitHub. Builds are unsigned: no
-# secrets are used besides the workflow's own GITHUB_TOKEN.
+# Builds the installers for tag v<version> (the root package.json's version) on every OS, attaches
+# them to the release and publishes it as the latest one. Builds are unsigned: no secrets are used
+# besides the workflow's own GITHUB_TOKEN.
 #
 # Two ways in:
 # - release-please (.github/workflows/release-please.yml) calls this workflow with the tag when it
 #   creates a release. It has to call it: a tag or release made with the default GITHUB_TOKEN never
 #   starts another workflow, so the push trigger below would not fire for it.
-# - Pushing a v* tag by hand (the manual fallback). The draft release is created here.
+# - Pushing a v* tag by hand (the manual fallback). The release is created here, as a draft until
+#   its files are uploaded.
 #
 # The jobs that run npm code (npm ci, tests, electron-builder) only read the repository and hand
 # their files over as artifacts. Only the last job can write to the repository, and it runs no
@@ -110,21 +111,22 @@ jobs:
           pattern: release-*
           path: release-files
           merge-multiple: true
-      # release-please has already created the draft release (with its changelog as the notes); a
-      # manual tag has none yet, so it is created here. Every release, alpha ones included, is
-      # left as a draft that is not a pre-release, and is marked as the latest when it is published
-      # (GitHub refuses --latest on a draft): its releases/latest/download/<file> links (the
-      # README's download links and the one-line installers) only follow the "latest" release, and
-      # GitHub never makes a pre-release the latest. The version keeps its suffix
+      # release-please has already created the release, as a pre-release with its changelog as the
+      # notes; a manual tag has none yet, so it is created here as a draft. Once the files are up,
+      # every release, alpha ones included, is published as a release that is not a pre-release and
+      # is the latest: its releases/latest/download/<file> links (the README's download links and
+      # the one-line installers) only follow the "latest" release, and GitHub never makes a
+      # pre-release the latest. Until then the app's update check skips it, as it has no update
+      # manifest yet (packages/app/src/main/release-pick.ts). The version keeps its suffix
       # (2.0.0-alpha.N), so a future stable install never takes an alpha as an update: semver puts
       # 2.0.0-alpha.N below 2.0.0 (see packages/app/src/main/updates.ts).
-      - name: Create or find the draft release and upload the files
+      - name: Create or find the release, upload the files and publish it
         env:
           GH_TOKEN: ${{ github.token }}
         working-directory: release-files
         run: |
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --title "Workhub 2 ${TAG#v}" --prerelease=false
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --title "Workhub 2 ${TAG#v}"
           else
             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag --title "Workhub 2 ${TAG#v}" --generate-notes --prerelease=false
           fi
@@ -133,3 +135,4 @@ jobs:
           [ "${#files[@]}" -gt 0 ] || { echo "no release files were built" >&2; exit 1; }
           printf 'uploading: %s\n' "${files[@]}"
           gh release upload "$TAG" "${files[@]}" --clobber --repo "$GITHUB_REPOSITORY"
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease=false --latest

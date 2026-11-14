@@ -78,13 +78,12 @@ Versions and the [CHANGELOG](CHANGELOG.md) come from the Conventional Commits on
    pull request's **Checks** tab, or with
    `gh api -X POST repos/<owner>/<repo>/actions/runs/<run-id>/approve`.
 2. **Cut the release.** Merge the release pull request. The run on that merge tags it
-   (`v<version>`), creates a **draft** GitHub release with the changelog entry as its notes, and
-   calls `.github/workflows/release.yml`, which builds the macOS, Windows and Linux installers and
-   attaches them, with `.sha256` files and the `latest*.yml` update metadata, to the draft.
-3. **Publish.** When the `release-please` workflow is green, open the draft on the Releases page,
-   check the files and the notes, and publish it as the **latest** (`gh release edit v<version>
-   --draft=false --latest`; a draft cannot be marked latest before). Every release, alpha ones
-   included, is the latest and not a pre-release, because the README's download links and the one-line
+   (`v<version>`), creates the GitHub release with the changelog entry as its notes, and calls
+   `.github/workflows/release.yml`, which builds the macOS, Windows and Linux installers and
+   attaches them, with `.sha256` files and the `latest*.yml` update metadata.
+3. **Published by itself.** Once the files are attached, `release.yml` publishes the release as the
+   **latest**; the in-app update check sees it from then on (it skips a release without its
+   `latest*.yml`). Every release, alpha ones included, is the latest and not a pre-release, because the README's download links and the one-line
    installers use `releases/latest/download/<file>`, which only follows the latest release. Each
    installer is attached twice: with the version in its name (read by the in-app updater through
    `latest*.yml`) and without it (`Workhub-2-win-x64.exe`, `Workhub-2-mac-arm64.dmg`, …, for those
@@ -112,8 +111,8 @@ its branch) to run the checks.
 When release-please cannot be used, set the same version in the root `package.json`,
 `packages/app/package.json`, `package-lock.json` and `.release-please-manifest.json`, commit and
 push, then push the tag: `git tag v<version> && git push origin v<version>`. `release.yml` checks
-the tag against the version, builds the installers and creates the draft release (notes generated
-by GitHub) for you to publish. `scripts/release.sh --dry-run`, then `--publish`, releases a macOS
+the tag against the version, builds the installers and creates the release (notes generated
+by GitHub), published once its files are attached. `scripts/release.sh --dry-run`, then `--publish`, releases a macOS
 build from your machine.
 
 ## Reporting problems

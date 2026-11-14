@@ -114,8 +114,8 @@ them for macOS (arm64 `.dmg` and `.zip`), Windows (x64 NSIS `.exe`) and Linux (x
 to Workhub 1. The builds are **not signed with a paid certificate**, so each OS asks for one extra
 step on the first launch. Every artifact has a `.sha256` file to check the download.
 
-A release is created as a **draft** and only its owner sees drafts until it is published. If the
-Releases page shows no published release, build from source instead (see **macOS from source**
+A release is published once its installers are attached. If the Releases page shows no published
+release, build from source instead (see **macOS from source**
 below and [Build installers](#build-installers)).
 
 **macOS**: open the `.dmg` and drag Workhub 2 to Applications (or unzip the `.zip`). The app is

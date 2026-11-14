@@ -4,8 +4,8 @@ name: release-please
 # opens or updates the release pull request: the next version in every package.json and
 # package-lock.json, and the new CHANGELOG.md entry, built from the Conventional Commits since the
 # last release. Merging that pull request makes the run on the merge commit tag it and create a
-# DRAFT pre-release with the changelog as its notes; this workflow then calls release.yml to build
-# the installers and attach them to that draft. Review it, then publish it from GitHub.
+# pre-release with the changelog as its notes; this workflow then calls release.yml to build the
+# installers, attach them and publish it as the latest release.
 #
 # release.yml is called rather than left to its tag trigger because a tag or release created with
 # the default GITHUB_TOKEN never starts another workflow. No other secret is used.
@@ -28,7 +28,7 @@ jobs:
       group: release-please
       cancel-in-progress: false
     permissions:
-      contents: write # the release branch, the tag and the draft release
+      contents: write # the release branch, the tag and the release
       pull-requests: write # the release pull request
       issues: write # the autorelease labels on it
     outputs:

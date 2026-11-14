@@ -11,7 +11,6 @@
       "versioning": "prerelease",
       "prerelease": true,
       "prerelease-type": "alpha",
-      "draft": true,
       "force-tag-creation": true,
       "extra-files": [
         { "type": "json", "path": "packages/app/package.json", "jsonpath": "$.version" },

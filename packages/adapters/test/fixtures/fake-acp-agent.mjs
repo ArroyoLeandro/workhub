@@ -5,6 +5,7 @@
 // "commands" reports its slash commands first.
 //
 // FAKE_ACP_SILENT=1 makes it read its input and never answer.
+// FAKE_ACP_CRASH=1 makes it write why to stderr and exit with code 1 before answering.
 //
 // FAKE_ACP_STYLE picks how session/new advertises models and modes:
 // - unset: ACP `modes` (permission modes) and `models` (session/set_mode, session/set_model).
@@ -48,6 +49,10 @@ const waiting = new Map()
 createInterface({ input: process.stdin }).on('line', (line) => {
   // FAKE_ACP_SILENT: an agent that starts and never answers.
   if (process.env.FAKE_ACP_SILENT) return
+  if (process.env.FAKE_ACP_CRASH) {
+    process.stderr.write('\u001b[31mnpm error\u001b[0m 404 Not Found\nError: not logged in, run `fake login`\n')
+    process.exit(1)
+  }
   const msg = JSON.parse(line)
   if (msg.id !== undefined && !msg.method) {
     waiting.get(msg.id)?.(msg.result)

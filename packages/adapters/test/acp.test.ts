@@ -258,6 +258,20 @@ describe('AcpRuntime against a fake ACP agent', () => {
     })
   })
 
+  it('fails the start with what the agent wrote to stderr when it exits on its own', async () => {
+    const rt = new AcpRuntime({ clientName: 'workhub-test', clientVersion: '0.0.0' })
+    const events: AgentEvent[] = []
+    rt.subscribe((e) => events.push(e))
+    try {
+      await expect(rt.start({ sessionId: 's-crash', agent: fakeAgent, account: null, cwd: process.cwd(), env: { FAKE_ACP_CRASH: '1' } })).rejects.toThrow(
+        'agent exited during start (code 1):\nnpm error 404 Not Found\nError: not logged in, run `fake login`'
+      )
+      expect(events.filter((e) => e.type === 'state').at(-1)).toMatchObject({ state: 'error', error: expect.stringContaining('not logged in') })
+    } finally {
+      await rt.stopAll()
+    }
+  })
+
   it('stops the agent and fails the start when it never answers', async () => {
     const rt = new AcpRuntime({ clientName: 'workhub-test', clientVersion: '0.0.0', startTimeoutMs: 200 })
     const events: AgentEvent[] = []

@@ -79,8 +79,8 @@ export const SessionPane = memo(function SessionPane({ data, visible, theme }: {
       )}
       <PendingSwitchBar view={v} />
       {v.error && (
-        <div role="alert" className="flex shrink-0 items-center gap-2 border-b border-border bg-danger-soft px-4 py-1.5 text-sm text-danger">
-          <CircleAlert className="size-4" aria-hidden />
+        <div role="alert" className="flex max-h-40 shrink-0 items-start gap-2 overflow-y-auto border-b border-border bg-danger-soft px-4 py-1.5 text-sm whitespace-pre-wrap text-danger">
+          <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
           {v.error}
         </div>
       )}

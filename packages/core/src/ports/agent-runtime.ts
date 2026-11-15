@@ -136,7 +136,8 @@ export type AgentEvent =
   /** Raw terminal output (terminal adapter). */
   | { sessionId: string; type: 'output'; data: string }
   | { sessionId: string; type: 'stderr'; line: string }
-  | { sessionId: string; type: 'exit'; code: number | null }
+  /** `stderr`: the last lines the process wrote there, when it exited on its own (the likely cause). */
+  | { sessionId: string; type: 'exit'; code: number | null; stderr?: string[] }
 
 export type AgentEventListener = (event: AgentEvent) => void
 export type Unsubscribe = () => void

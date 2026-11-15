@@ -2,7 +2,7 @@ import { ArrowRightLeft, ArrowUp, Brain, ChevronRight, FoldVertical, CircleAlert
 import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ChangeEvent, type ClipboardEvent, type DragEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react'
 import { appOptions, filterSlashCommands, gatePrompt, sessionIdentity, setCeiling, setSessionCeiling, slashQuery, type SlashCommandInfo, type SubagentSummary } from '@workhub/core'
 import { Button, IconButton } from '../../components/atoms'
-import { CopyButton, Markdown } from '../../components/molecules'
+import { CopyButton, Markdown, type MarkdownActions } from '../../components/molecules'
 import { useToast } from '../../components/molecules/Toast'
 import { BrandMark, ToolCallCard } from '../../components/organisms'
 import { useI18n } from '../../i18n/I18nProvider'
@@ -34,6 +34,8 @@ import { dismissOffer, originText, useContinuityActions, useContinuityOffer } fr
 import { ContinuityNotice } from './ContinuityNotice'
 import { openSubagent, subagentOfCall } from '../../lib/subagentView'
 import { errorText } from '../../lib/errorText'
+import { terminalChannel } from '@shared/api'
+import { FileChecker } from '../../lib/chatLinks'
 
 /** The Claude adapter's English compaction and `/clear` notices, shown in the reader's language. */
 const COMPACTED_TEXT = 'The conversation was compacted.'
@@ -213,7 +215,18 @@ interface ChatBlockProps {
   onAnswer: (requestId: string, optionId: string | null, label: string, answers?: Record<string, string>) => void
   sessionId: string
   cwd: string
+  /** The session has a Shell view: shell blocks in replies get a run button. */
+  hasShell: boolean
   subagents?: SubagentSummary[]
+}
+
+/** Which paths in replies are files, shared by every chat. */
+const fileChecker = new FileChecker((paths, cwd) => window.hub.files.areFiles(paths, cwd))
+
+/** Shows the session's Shell view and types the command there, line by line, then Enter. */
+async function runInShell(sessionId: string, command: string): Promise<void> {
+  await window.hub.sessions.setMode(sessionId, 'shell')
+  window.hub.sessions.write(terminalChannel(sessionId, 'shell'), `${command.replace(/\r?\n/g, '\r')}\r`)
 }
 
 /**
@@ -221,7 +234,15 @@ interface ChatBlockProps {
  * would otherwise parse all its Markdown again on every render of the pane (a clock tick, a sidebar
  * click that refreshes the config).
  */
-const ChatBlock = memo(function ChatBlock({ item, onAnswer, sessionId, cwd, subagents }: ChatBlockProps) {
+const ChatBlock = memo(function ChatBlock({ item, onAnswer, sessionId, cwd, hasShell, subagents }: ChatBlockProps) {
+  const replyActions = useMemo<MarkdownActions>(
+    () => ({
+      openFile: (path) => void window.hub.files.openWindow(path, cwd),
+      isFile: { known: (path) => fileChecker.peek(path, cwd), check: (path) => fileChecker.isFile(path, cwd) },
+      ...(hasShell ? { runCommand: (command: string) => void runInShell(sessionId, command).catch((e: unknown) => pushItem(sessionId, 'error', errorText(e))) } : {})
+    }),
+    [sessionId, cwd, hasShell]
+  )
   const { t, tn } = useI18n()
   switch (item.kind) {
     case 'user':
@@ -255,7 +276,7 @@ const ChatBlock = memo(function ChatBlock({ item, onAnswer, sessionId, cwd, suba
         <div className="flex gap-3" data-testid="agent-message">
           <BrandMark className="mt-0.5 size-5 shrink-0" />
           <div className="min-w-0 flex-1">
-            <Markdown text={item.text} className="leading-relaxed" />
+            <Markdown text={item.text} className="leading-relaxed" actions={replyActions} />
             <div className="flex items-center gap-1">
               <SentAt at={item.at} align="left" />
               <CopyButton text={() => item.text} />
@@ -718,7 +739,7 @@ export function ChatPane({ data, active = false }: { data: SessionData; active?:
           {replayAt < 0 && originLine}
           {data.items.map((i, n) => (
             <Fragment key={i.id}>
-              <ChatBlock item={i} onAnswer={answer} sessionId={v.id} cwd={v.cwd} subagents={data.monitor.subagents} />
+              <ChatBlock item={i} onAnswer={answer} sessionId={v.id} cwd={v.cwd} hasShell={v.modes.includes('shell')} subagents={data.monitor.subagents} />
               {n === replayAt && originLine}
             </Fragment>
           ))}

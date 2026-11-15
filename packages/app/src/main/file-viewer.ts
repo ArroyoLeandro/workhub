@@ -93,6 +93,24 @@ export interface FileViewerDeps {
   pastedImagesDir?: string
 }
 
+/**
+ * For each path, whether it names a file (not a folder) on this computer; relative paths are taken
+ * from `base`. At most 200 paths a call; anything that is not a string is not a file.
+ */
+export async function areFiles(paths: unknown, base: string, home: string): Promise<boolean[]> {
+  if (!Array.isArray(paths)) return []
+  return Promise.all(
+    paths.slice(0, 200).map((p) =>
+      typeof p === 'string' && p.trim() && p.length <= 1000
+        ? stat(absoluteFilePath(p, base, home)).then(
+            (s) => s.isFile(),
+            () => false
+          )
+        : false
+    )
+  )
+}
+
 /** Opens viewer windows and answers them; returns `open` for the main process's own use. */
 export function registerFileViewerIpc(ipc: IpcRegistrar, deps: FileViewerDeps): { open: (path: string, cwd?: string) => void } {
   const byPath = new Map<string, BrowserWindow>()
@@ -122,6 +140,7 @@ export function registerFileViewerIpc(ipc: IpcRegistrar, deps: FileViewerDeps): 
   const own = (e: IpcMainInvokeEvent | IpcMainEvent, path: unknown): string | null => (typeof path === 'string' && pathOf.get(e.sender.id) === path ? path : null)
 
   ipc.handle('files:openWindow', (_e, path: string, cwd?: string) => open(path, cwd))
+  ipc.handle('files:areFiles', (_e, paths: unknown, cwd?: unknown) => areFiles(paths, typeof cwd === 'string' && cwd ? cwd : deps.home, deps.home))
   // Pasted chat images get a file of their own (named after their content) that the viewer opens.
   ipc.handle('files:cacheImages', (_e, dataUrls: unknown) => (deps.pastedImagesDir ? cachePastedImages(deps.pastedImagesDir, dataUrls) : []))
   ipc.handle('files:read', (e, path: unknown, known?: { stamp: FileStamp | null } | null, forceText?: boolean) => {

@@ -116,6 +116,16 @@ stays in the current view.
   and, for Claude, the estimated cost against a warm cache. It only informs; close it with **×**.
   See [Usage and budgets](usage.md#reviving-an-idle-conversation).
 
+In the agent's replies:
+
+- A file path written as code (`src/app.ts`, `~/notes.md`, `README.md`, with or without a
+  `:line`) or used as a link opens in Workhub's file viewer when clicked, if that file exists on
+  this computer (a branch such as `feat/x` stays plain text). Relative paths start from the
+  session folder. The viewer can also open the file in its default app or show it in its folder.
+- A shell code block (`sh`, `bash`, `zsh`, `powershell`, `cmd`) has a run button next to copy: it
+  opens the Shell view and types the command there, without prompt marks, output lines or comments.
+  It runs only when you click.
+
 ## Header and More
 
 The header shows the agent, the account, the folder, what the agent is doing with a timer

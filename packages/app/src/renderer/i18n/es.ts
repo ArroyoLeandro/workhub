@@ -366,6 +366,8 @@ export const es: Record<keyof typeof en, string> = {
   'chat.images.one': '{count} imagen',
   'chat.images.other': '{count} imágenes',
   'chat.noticeEmpty': 'Sin salida',
+  'chat.openFile': 'Abrir {path}',
+  'chat.runCommand': 'Ejecutar en la vista Shell',
   'chat.copy': 'Copiar',
   'chat.copied': 'Copiado',
   'chat.showMore': 'Ver más',

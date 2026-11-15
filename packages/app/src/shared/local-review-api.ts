@@ -62,6 +62,8 @@ export interface FileRead {
 export interface FilesApi {
   /** A file in the viewer window; a relative path is taken from `cwd` (the session's folder). */
   openWindow(path: string, cwd?: string): Promise<void>
+  /** For each path (relative ones taken from `cwd`), whether it is a file on this computer. */
+  areFiles(paths: string[], cwd?: string): Promise<boolean[]>
   /**
    * Writes pasted images (`data:` URLs) to files of their own in the data folder, once each (named
    * after their content), for `openWindow`. Each entry is the file, or null when it was not an image.

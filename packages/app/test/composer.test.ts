@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isEditable, shouldFocusComposer } from '../src/renderer/lib/composer-focus'
-import { MAX_IMAGE_FILE_BYTES, MAX_PROMPT_IMAGES, checkImageFile, insertImageMarkers, pickImageFiles, removeImageMarker } from '../src/renderer/lib/images'
+import { MAX_IMAGE_FILE_BYTES, checkImageFile, insertImageMarkers, pickImageFiles, removeImageMarker } from '../src/renderer/lib/images'
 import { PromptQueues, acceptsInput, restoreComposer, submitMode } from '../src/renderer/lib/prompt-queue'
 import { withTurnEnd, type SessionData } from '../src/renderer/store'
 
@@ -188,8 +188,8 @@ describe('restoreComposer', () => {
       { text: '', images: ['b'] },
       { text: 'two', images: [] }
     ]
-    expect(restoreComposer({ text: 'typing', images: ['c'] }, recovered, 10)).toEqual({ text: 'one\n\ntwo\n\ntyping', images: ['a', 'b', 'c'] })
-    expect(restoreComposer({ text: '  ', images: [] }, recovered, 2)).toEqual({ text: 'one\n\ntwo', images: ['a', 'b'] })
+    expect(restoreComposer({ text: 'typing', images: ['c'] }, recovered)).toEqual({ text: 'one\n\ntwo\n\ntyping', images: ['a', 'b', 'c'] })
+    expect(restoreComposer({ text: '  ', images: [] }, recovered)).toEqual({ text: 'one\n\ntwo', images: ['a', 'b'] })
   })
 })
 
@@ -221,11 +221,11 @@ describe('pasted images', () => {
     // Base64 of the largest accepted file still fits Claude's 5 MB per image.
     expect(Math.ceil(MAX_IMAGE_FILE_BYTES / 3) * 4).toBeLessThanOrEqual(5 * 1024 * 1024)
   })
-  it('keeps the per-message count, counting the images already attached', () => {
+  it('sets no count per message: only the type and size leave an image out', () => {
     const png = { type: 'image/png', size: 1 }
-    const pick = pickImageFiles([png, { type: 'image/bmp', size: 1 }, png, png], MAX_PROMPT_IMAGES - 2)
-    expect(pick.accepted).toHaveLength(2)
-    expect(pick.rejected.map((r) => r.reason)).toEqual(['type', 'count'])
+    const pick = pickImageFiles([...Array<typeof png>(40).fill(png), { type: 'image/bmp', size: 1 }])
+    expect(pick.accepted).toHaveLength(40)
+    expect(pick.rejected.map((r) => r.reason)).toEqual(['type'])
   })
 })
 

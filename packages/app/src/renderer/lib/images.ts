@@ -2,8 +2,6 @@ import type { ImageInput } from '@workhub/core'
 
 /** Image types Claude accepts in a prompt. */
 export const PROMPT_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'] as const
-/** Pasted images per prompt (Workhub 1 shows a row of thumbnails; a few are plenty). */
-export const MAX_PROMPT_IMAGES = 6
 /** Claude's limit per image is 5 MB of base64. */
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 /** The largest file that stays under `MAX_IMAGE_BYTES` once encoded (base64 adds a third). */
@@ -21,7 +19,7 @@ export function imageInputFromDataUrl(url: string): ImageInput | null {
 }
 
 /** Why an image file cannot go with a prompt; null when it can. */
-export type ImageRejection = 'type' | 'size' | 'count'
+export type ImageRejection = 'type' | 'size'
 
 export function checkImageFile(file: Pick<File, 'type' | 'size'>): ImageRejection | null {
   if (!(PROMPT_IMAGE_TYPES as readonly string[]).includes(file.type.toLowerCase())) return 'type'
@@ -36,12 +34,13 @@ export interface ImageFilePick<F> {
 
 /**
  * Splits pasted or dropped files into the images that can go with the prompt and the ones left
- * out (wrong type, too large, or past the per-prompt count given the `already` attached ones).
+ * out (wrong type or too large). Workhub sets no count per prompt; the agent may refuse a prompt
+ * with more images than it takes, and says so.
  */
-export function pickImageFiles<F extends Pick<File, 'type' | 'size'>>(files: readonly F[], already: number): ImageFilePick<F> {
+export function pickImageFiles<F extends Pick<File, 'type' | 'size'>>(files: readonly F[]): ImageFilePick<F> {
   const out: ImageFilePick<F> = { accepted: [], rejected: [] }
   for (const file of files) {
-    const reason = checkImageFile(file) ?? (already + out.accepted.length >= MAX_PROMPT_IMAGES ? 'count' : null)
+    const reason = checkImageFile(file)
     if (reason) out.rejected.push({ file, reason })
     else out.accepted.push(file)
   }

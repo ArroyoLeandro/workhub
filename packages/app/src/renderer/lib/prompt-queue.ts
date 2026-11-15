@@ -181,10 +181,9 @@ const EMPTY: readonly QueuedPrompt[] = []
  */
 export function restoreComposer(
   current: { text: string; images: string[] },
-  recovered: readonly { text: string; images: string[] }[],
-  maxImages: number
+  recovered: readonly { text: string; images: string[] }[]
 ): { text: string; images: string[] } {
   const text = [...recovered.map((p) => p.text.trim()), current.text.trim()].filter(Boolean).join('\n\n')
-  const images = [...recovered.flatMap((p) => p.images), ...current.images].slice(0, maxImages)
+  const images = [...recovered.flatMap((p) => p.images), ...current.images]
   return { text, images }
 }

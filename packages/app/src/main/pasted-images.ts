@@ -12,9 +12,6 @@ export const PASTED_IMAGE_EXTENSIONS: Readonly<Record<string, string>> = { 'imag
 /** Base64 characters of one image at most (a prompt image is up to 5 MB of base64; history may hold a little more). */
 export const MAX_PASTED_IMAGE_BASE64 = 8 * 1024 * 1024
 
-/** Images written in one call at most. */
-export const MAX_PASTED_IMAGES_PER_CALL = 32
-
 /** The image of a `data:` URL; null for anything that is not an accepted image. */
 export function decodeImageDataUrl(url: unknown): { mediaType: string; bytes: Buffer } | null {
   if (typeof url !== 'string' || url.length > MAX_PASTED_IMAGE_BASE64 + 64) return null
@@ -57,5 +54,5 @@ export async function cachePastedImage(dir: string, dataUrl: unknown): Promise<s
 /** Several images at once; each entry is its file, or null when that one could not be written. */
 export async function cachePastedImages(dir: string, dataUrls: unknown): Promise<(string | null)[]> {
   if (!Array.isArray(dataUrls)) return []
-  return Promise.all(dataUrls.slice(0, MAX_PASTED_IMAGES_PER_CALL).map((url) => cachePastedImage(dir, url)))
+  return Promise.all(dataUrls.map((url) => cachePastedImage(dir, url)))
 }

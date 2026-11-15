@@ -404,7 +404,6 @@ export const es: Record<keyof typeof en, string> = {
   'chat.queueRestored.one': 'Interrumpido: {count} mensaje que esperaba volvió al cuadro de texto, sin enviarse',
   'chat.queueRestored.other': 'Interrumpido: {count} mensajes que esperaban volvieron al cuadro de texto, sin enviarse',
   'chat.removeQueued': 'Quitar mensaje en cola',
-  'chat.imageTooMany': 'Hasta {n} imágenes por mensaje: el resto se omitió.',
   'chat.imagesUnsupported': 'Este agente no acepta imágenes.',
   'chat.removeImage': 'Quitar imagen {n}',
   'chat.attachImages': 'Adjuntar imágenes (o pégalas o suéltalas aquí)',

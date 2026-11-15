@@ -9,7 +9,7 @@ import { useI18n } from '../../i18n/I18nProvider'
 import type { MessageKey } from '../../i18n/translate'
 import { cn } from '../../lib/cn'
 import { onComposerDraft, takeComposerDraft } from '../../lib/drafts'
-import { hasImageFiles, imageFilesOf, insertImageMarkers, MAX_PROMPT_IMAGES, pickImageFiles, PROMPT_IMAGE_TYPES, readImageFiles, removeImageMarker } from '../../lib/images'
+import { hasImageFiles, imageFilesOf, insertImageMarkers, pickImageFiles, PROMPT_IMAGE_TYPES, readImageFiles, removeImageMarker } from '../../lib/images'
 import { acceptsInput, restoreComposer } from '../../lib/prompt-queue'
 import { isEditable, shouldFocusComposer } from '../../lib/composer-focus'
 import { interruptSession, onRecoveredPrompts, removeQueuedPrompt, submitPrompt, useQueuedPrompts } from '../../promptQueue'
@@ -414,7 +414,7 @@ export function ChatPane({ data, active = false }: { data: SessionData; active?:
     () =>
       onRecoveredPrompts((id, prompts) => {
         if (id !== v.id) return
-        const next = restoreComposer(draft.current, prompts, MAX_PROMPT_IMAGES)
+        const next = restoreComposer(draft.current, prompts)
         draft.current = next
         setText(next.text)
         setImages(next.images)
@@ -639,16 +639,15 @@ export function ChatPane({ data, active = false }: { data: SessionData; active?:
       pushItem(v.id, 'error', t('chat.imagesUnsupported'))
       return
     }
-    const { accepted, rejected } = pickImageFiles(files, images.length)
-    if (rejected.some((r) => r.reason !== 'count')) pushItem(v.id, 'error', t('chat.imageRejected'))
-    if (rejected.some((r) => r.reason === 'count')) pushItem(v.id, 'error', t('chat.imageTooMany', { n: MAX_PROMPT_IMAGES }))
+    const { accepted, rejected } = pickImageFiles(files)
+    if (rejected.length) pushItem(v.id, 'error', t('chat.imageRejected'))
     if (!accepted.length) return
     const from = images.length
     const el = composer.current
     const caret = el && document.activeElement === el ? el.selectionStart : text.length
     readImageFiles(accepted).then(
       (urls) => {
-        setImages((prev) => [...prev, ...urls].slice(0, MAX_PROMPT_IMAGES))
+        setImages((prev) => [...prev, ...urls])
         let after = caret
         setText((current) => {
           const next = insertImageMarkers(current, caret, imageLabel, from, urls.length)

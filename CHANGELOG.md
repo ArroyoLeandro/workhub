@@ -4,6 +4,22 @@ All notable changes to Workhub 2 are listed here. Entries from 2.0.0-alpha.2 on 
 [release-please](https://github.com/googleapis/release-please) from the Conventional Commits on
 `main`; see the release process in [CONTRIBUTING.md](CONTRIBUTING.md#releases).
 
+## [2.0.0-alpha.31](https://github.com/SoldierIced/workhub/compare/v2.0.0-alpha.30...v2.0.0-alpha.31) (2026-11-15)
+
+
+### Features
+
+* **sessions:** open files and run shell commands from an agent's reply ([0fe0408](https://github.com/SoldierIced/workhub/commit/0fe0408cce1293499d62775a3452b5f45e74bc45))
+* **sessions:** open files and run shell commands from an agent's reply ([cea5251](https://github.com/SoldierIced/workhub/commit/cea52516fcdaa711ba370ca7fb56d97c72c8aa0a))
+* **sessions:** run /login from the chat through Claude's console ([10c875b](https://github.com/SoldierIced/workhub/commit/10c875b9ba8e23ccb386471153e42c84932344c1))
+
+
+### Bug Fixes
+
+* agent startup errors, /login from the chat, Windows console path ([5a21bf8](https://github.com/SoldierIced/workhub/commit/5a21bf8a54537acb80045bcebeaf29807354cb66))
+* **agents:** show what an agent wrote to stderr when it exits on its own ([13d96d0](https://github.com/SoldierIced/workhub/commit/13d96d04b6358d720548bb15c799929a008d5e47))
+* **terminal:** find the console's command on the session PATH on Windows ([b5eff87](https://github.com/SoldierIced/workhub/commit/b5eff878ddc26bbbeb3f4026f7c51847b0f7ab1f))
+
 ## [2.0.0-alpha.30](https://github.com/SoldierIced/workhub/compare/v2.0.0-alpha.29...v2.0.0-alpha.30) (2026-11-14)
 
 

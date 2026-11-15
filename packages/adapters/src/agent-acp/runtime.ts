@@ -37,6 +37,7 @@ import type {
 } from '@workhub/core'
 import { findExecutable } from './availability'
 import { pathKeyOf } from '../shared/login-path'
+import { StderrTail, withStderr } from '../shared/stderr-tail'
 import { AcpMonitor, permissionMode, readConfigSelect, readModels, readModes, type SelectVia } from './monitor-mapping'
 import { killProcessTree, planSpawn, type KillTreeDeps } from './spawn-plan'
 import { acpToolResult, acpToolView } from './tool-view'
@@ -84,6 +85,10 @@ interface AcpSession {
   modeVia?: SelectVia
   /** Slash commands by where the agent reported them (ACP `available_commands_update`, Kiro's extension). */
   commands: Map<'acp' | 'kiro', SlashCommandInfo[]>
+  /** What the process last wrote to stderr: the cause when it exits on its own. */
+  stderr: StderrTail
+  /** Settles once the process has exited and its pipes are read (or shortly after the exit). */
+  ended: Promise<number | null>
 }
 
 /** Commands as an agent lists them (ACP `availableCommands`, Kiro's `commands`); entries without a name are skipped. */
@@ -154,14 +159,21 @@ export class AcpRuntime implements AgentRuntime, ModelControl, SessionModeContro
       stopping: false,
       models: [],
       modes: [],
-      commands: new Map()
+      commands: new Map(),
+      stderr: new StderrTail(),
+      ended: new Promise<number | null>((done) => {
+        // `exit` can come before the last stderr lines are read; `close` comes after them, but a
+        // grandchild holding the pipe could delay it, so it is not awaited for long.
+        child.once('exit', (code) => setTimeout(() => done(code), 300))
+        child.once('close', (code) => done(code))
+      })
     }
     this.sessions.set(id, session)
 
     // Spawn errors (command not found) arrive as an event, not a throw.
     const spawnFailed = new Promise<never>((_, reject) => {
       child.once('error', (err) => reject(new Error(`could not start "${req.agent.command}": ${err.message}`)))
-      child.once('exit', (code) => reject(new Error(`agent exited during start (code ${code})`)))
+      void session.ended.then((code) => reject(new Error(withStderr(`agent exited during start (code ${code})`, session.stderr))))
     })
     spawnFailed.catch(() => {})
     // An agent that starts but never answers would leave the session starting forever.
@@ -177,15 +189,14 @@ export class AcpRuntime implements AgentRuntime, ModelControl, SessionModeContro
     const startGuard = Promise.race([spawnFailed, deadline])
     startGuard.catch(() => {})
     child.stderr?.setEncoding('utf8')
-    child.stderr?.on('data', (d: string) =>
+    child.stderr?.on('data', (d: string) => {
+      session.stderr.push(d)
       d.split('\n').filter(Boolean).forEach((line) => this.emit({ sessionId: id, type: 'stderr', line }))
-    )
-    child.on('exit', (code) => {
-      this.emit({ sessionId: id, type: 'exit', code })
-      if (this.sessions.get(id) === session) {
-        this.sessions.delete(id)
-        this.emit({ sessionId: id, type: 'state', state: session.stopping ? 'stopped' : 'error', error: session.stopping ? undefined : `agent exited (code ${code})` })
-      }
+    })
+    child.once('exit', (code) => {
+      // Stopped on purpose: done at once. Exited on its own: the last stderr lines say why, so they are read first.
+      if (session.stopping) return this.ended(session, code)
+      void session.ended.then((c) => this.ended(session, c))
     })
 
     const base = ndJsonStream(
@@ -277,12 +288,28 @@ export class AcpRuntime implements AgentRuntime, ModelControl, SessionModeContro
       this.emit({ sessionId: id, type: 'state', state: 'ready' })
       return started
     } catch (err) {
+      // An agent that dies while starting closes the connection first ("ACP connection closed"):
+      // its exit and stderr, which come right after, say why. A process that never started (no pid)
+      // has its spawn error already.
+      const timedOut = Symbol('timedOut')
+      const code = session.child.pid === undefined ? timedOut : await Promise.race([session.ended, new Promise<typeof timedOut>((r) => setTimeout(() => r(timedOut), 500))])
+      const cause = code === timedOut ? null : withStderr(`agent exited during start (code ${code})`, session.stderr)
       await this.stop(id).catch(() => {})
-      const message = err instanceof Error ? err.message : JSON.stringify(err)
+      const message = cause ?? (err instanceof Error ? err.message : JSON.stringify(err))
       this.emit({ sessionId: id, type: 'state', state: 'error', error: message })
       throw new Error(message)
     } finally {
       clearTimeout(deadlineTimer)
+    }
+  }
+
+  private ended(session: AcpSession, code: number | null): void {
+    const failed = !session.stopping
+    const stderr = failed ? session.stderr.last() : []
+    this.emit({ sessionId: session.id, type: 'exit', code, ...(stderr.length ? { stderr } : {}) })
+    if (this.sessions.get(session.id) === session) {
+      this.sessions.delete(session.id)
+      this.emit({ sessionId: session.id, type: 'state', state: failed ? 'error' : 'stopped', error: failed ? withStderr(`agent exited (code ${code})`, session.stderr) : undefined })
     }
   }
 

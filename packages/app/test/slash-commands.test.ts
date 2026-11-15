@@ -36,6 +36,10 @@ function actions(fail = false) {
     setModel: vi.fn(async (id: string, model: string) => {
       log.push(`model ${id} ${model}`)
     }),
+    login: vi.fn(async (id: string) => {
+      log.push(`login ${id}`)
+      return !fail
+    }),
     report: (kind: 'done' | 'error', text: string) => log.push(`${kind}: ${text}`)
   }
 }
@@ -90,6 +94,26 @@ describe('runWorkhubCommand', () => {
     expect(runWorkhubCommand(v, '/model nope', a, t)).toBe(true)
     await settle()
     expect(a.log).toEqual(['model s1 acme-model-2', 'error: No model “nope”. Models: acme-model-1, acme-model-2', 'done: Switched to Acme 2'])
+  })
+})
+
+describe('/login', () => {
+  it('is Workhub\'s for Claude in the chat when the session has a console, and not for other agents', () => {
+    expect(workhubCommands(view({ modes: ['app', 'console', 'shell'] }), t).map((c) => c.name)).toEqual(['rename', 'login'])
+    expect(workhubCommands(view({ modes: ['app'] }), t).map((c) => c.name)).toEqual(['rename'])
+    expect(workhubCommands(view({ agentId: 'kiro', adapter: 'acp', modes: ['app', 'console'] }), t).map((c) => c.name)).toEqual(['rename'])
+    expect(runWorkhubCommand(view({ agentId: 'kiro', adapter: 'acp', modes: ['app', 'console'] }), '/login', actions(), t)).toBe(false)
+  })
+
+  it('opens the console and types /login there, and says so', async () => {
+    const a = actions()
+    expect(runWorkhubCommand(view({ modes: ['app', 'console'] }), '/login', a, t)).toBe(true)
+    await settle()
+    expect(a.log).toEqual(['login s1', 'done: Sign in in the Terminal view. Once done, go back to App (⌘⌥1 or Ctrl+Alt+1).'])
+    const late = actions(true)
+    runWorkhubCommand(view({ modes: ['app', 'console'] }), '/login', late, t)
+    await settle()
+    expect(late.log.at(-1)).toBe('error: The Terminal view did not come up in time. Type /login there yourself.')
   })
 })
 

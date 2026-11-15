@@ -261,6 +261,7 @@ export const en = {
   'chat.stop.maxTurnRequests': 'Stopped: too many steps in one turn',
   'chat.stop.refusal': 'Stopped: the agent refused',
   'chat.exited': 'The agent process exited ({code})',
+  'chat.exitedStderr': 'What the agent last wrote to its error output',
   'chat.signal': 'signal',
   'chat.prompt': 'Prompt',
   'chat.placeholder': 'Ask the agent…',

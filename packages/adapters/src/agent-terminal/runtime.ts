@@ -4,6 +4,7 @@
  */
 import * as nodePty from 'node-pty'
 import { delimiter } from 'node:path'
+import { findExecutable } from '../agent-acp/availability'
 import { pathKeyOf } from '../shared/login-path'
 import {
   NO_CAPABILITIES,
@@ -34,6 +35,8 @@ export interface TerminalRuntimeOptions {
    * Code binary Workhub bundles, for a user with no `claude` of their own).
    */
   fallbackPath?: string[]
+  /** Injectable for tests; the running platform otherwise. */
+  platform?: NodeJS.Platform
 }
 
 export function defaultShell(): { command: string; args: string[] } {
@@ -78,14 +81,20 @@ export class TerminalRuntime implements AgentRuntime, TerminalControl {
     const shell = defaultShell()
     const command = req.agent.command.trim() || this.options.defaultShell || shell.command
     const args = req.agent.command.trim() ? req.agent.args : this.options.defaultShell ? [] : shell.args
+    const env = this.env(req.env)
+    // On Windows node-pty looks a bare command up on Workhub's own PATH, not the session's, so the
+    // folders added here (the login PATH, the bundled Claude Code) would never be searched:
+    // the command is resolved on the session's PATH first, as the ACP runtime does.
+    const platform = this.options.platform ?? process.platform
+    const file = platform === 'win32' ? ((await findExecutable(command, { path: env[pathKeyOf(env)] ?? '', platform })) ?? command) : command
     let pty: nodePty.IPty
     try {
-      pty = this.spawnPty(command, args, {
+      pty = this.spawnPty(file, args, {
         name: 'xterm-256color',
         cols: req.cols ?? 80,
         rows: req.rows ?? 24,
         cwd: req.cwd,
-        env: this.env(req.env)
+        env
       })
     } catch (err) {
       const error = `could not start "${command}": ${err instanceof Error ? err.message : String(err)}`

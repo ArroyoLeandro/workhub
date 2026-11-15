@@ -164,3 +164,38 @@ describe('session driver', () => {
     expect(expandHome('/abs', '/home/me')).toBe('/abs')
   })
 })
+
+describe('typing into a console that has just opened', () => {
+  function clocked() {
+    const base = setup()
+    let now = 1_000
+    const ticks: (() => void)[] = []
+    const driver = new SessionDriver(base.sessions, () => undefined, () => now, async (ms) => {
+      now += ms
+      ticks.shift()?.()
+    })
+    return { ...base, driver, ticks, at: () => now }
+  }
+
+  it('waits for the agent to draw its screen and go quiet, then types the command and Enter', async () => {
+    const { views, writes, driver, ticks } = clocked()
+    views.push(view('c1', 'ready', { mode: 'console', modes: ['app', 'console'] }))
+    driver.onChanged(views[0]!)
+    // Two polls with nothing on screen, then the agent draws, then stays quiet.
+    ticks.push(() => undefined, () => driver.onEvent({ sessionId: 'c1:console', type: 'output', data: 'Welcome' }))
+    expect(await driver.typeInConsoleWhenSettled('c1', '/login', { settleMs: 1000, pollMs: 250 })).toBe(true)
+    expect(writes).toEqual([
+      ['c1:console', '/login'],
+      ['c1:console', '\r']
+    ])
+  })
+
+  it('gives up when the console never draws, or the session stops', async () => {
+    const { views, writes, driver } = clocked()
+    views.push(view('c1', 'ready', { mode: 'console', modes: ['app', 'console'] }), view('c2', 'stopped', { mode: 'console' }))
+    views.forEach((v) => driver.onChanged(v))
+    expect(await driver.typeInConsoleWhenSettled('c1', '/login', { timeoutMs: 5000 })).toBe(false)
+    expect(await driver.typeInConsoleWhenSettled('c2', '/login')).toBe(false)
+    expect(writes).toEqual([])
+  })
+})

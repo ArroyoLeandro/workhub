@@ -28,7 +28,7 @@ export type ChatItem =
   /** A prompt turn ended; the reason is the agent's stop reason (end_turn, cancelled...). */
   | { id: number; at?: number; kind: 'turnEnd'; stopReason: string }
   /** The agent process exited; `code` is null when a signal ended it. */
-  | { id: number; at?: number; kind: 'exit'; code: number | null }
+  | { id: number; at?: number; kind: 'exit'; code: number | null; stderr?: string[] }
   /** `view`/`result`: what the call did per tool (diff, command output), when the agent reports it. */
   | { id: number; at?: number; kind: 'tool'; toolCallId: string; title: string; status: string; toolKind?: string; detail?: string; view?: ToolView; result?: ToolResultView }
   | { id: number; at?: number; kind: 'permission'; requestId: string; title: string; detail?: string; options: PermissionOption[]; questions?: AgentQuestion[]; answer?: string }
@@ -465,7 +465,7 @@ export function applyEvent(s: SessionData, e: AgentEvent, next: () => number): S
     case 'monitor':
       return { ...s, monitor: mergeMonitor(s.monitor, e.snapshot) }
     case 'exit':
-      return { ...s, items: [...s.items, { id: next(), at: Date.now(), kind: 'exit', code: e.code ?? null }] }
+      return { ...s, items: [...s.items, { id: next(), at: Date.now(), kind: 'exit', code: e.code ?? null, ...(e.stderr?.length ? { stderr: e.stderr } : {}) }] }
     default:
       return s
   }

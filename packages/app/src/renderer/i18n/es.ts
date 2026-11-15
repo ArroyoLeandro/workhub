@@ -260,6 +260,7 @@ export const es: Record<keyof typeof en, string> = {
   'chat.stop.maxTurnRequests': 'Detenido: demasiados pasos en un turno',
   'chat.stop.refusal': 'Detenido: el agente se negó',
   'chat.exited': 'El proceso del agente terminó ({code})',
+  'chat.exitedStderr': 'Lo último que el agente escribió en su salida de errores',
   'chat.signal': 'señal',
   'chat.prompt': 'Prompt',
   'chat.placeholder': 'Pregúntale al agente…',

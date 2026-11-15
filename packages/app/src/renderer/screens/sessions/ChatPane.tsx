@@ -358,7 +358,16 @@ const ChatBlock = memo(function ChatBlock({ item, onAnswer, sessionId, cwd, suba
         </div>
       )
     case 'exit':
-      return <div className="text-center text-xs text-subtle">{t('chat.exited', { code: item.code ?? t('chat.signal') })}</div>
+      return (
+        <div className="flex flex-col items-center gap-1 text-xs text-subtle">
+          {t('chat.exited', { code: item.code ?? t('chat.signal') })}
+          {item.stderr && (
+            <pre className="max-w-full overflow-x-auto rounded bg-surface-raised px-3 py-2 text-left font-mono text-2xs whitespace-pre-wrap text-muted" aria-label={t('chat.exitedStderr')}>
+              {item.stderr.join('\n')}
+            </pre>
+          )}
+        </div>
+      )
   }
 })
 
@@ -549,6 +558,7 @@ export function ChatPane({ data, active = false }: { data: SessionData; active?:
         {
           rename: (id, name) => window.hub.sessions.rename(id, name),
           setModel: (id, model) => window.hub.sessions.setModel(id, model),
+          login: (id) => window.hub.sessions.login(id),
           report: (kind, message) => (kind === 'error' ? pushItem(v.id, 'error', message) : pushNotice(v.id, message, value))
         },
         t

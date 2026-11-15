@@ -139,8 +139,10 @@ brings it back; its icon shows whether the panel is open.
 - **Resume**: History lists past sessions of every account and agent; see
   [History](history.md). In the sidebar, a folder's menu has **Resume session…**. Only Claude Code
   sessions can be resumed so far.
-- **Rename**: **Rename…** in the session's menu, or double-click its name. Leave the name empty to
-  show the agent's name again.
+- **Rename**: **Rename…** in the session's menu, or double-click its name, or `/rename <name>` in
+  the chat. Leave the name empty to show the agent's name again.
+- **Sign in** (Claude): `/login` in the chat opens the Terminal view and runs `/login` there, since
+  Claude Code only signs in from its terminal UI. Once signed in, go back to App (⌘⌥1).
 - **Close**: the close button on the row. A session that is working asks first (**Stop and
   close**). A session in a worktree Workhub created offers to keep or remove the worktree. The
   conversation stays in History.

@@ -86,6 +86,14 @@ Some organizations turn private addresses off. If yours does, the option is miss
 service or the address is refused, and Workhub cannot read that calendar. See
 [Plan](user-guide/plan.md#adding-a-calendar).
 
+## An agent stops as soon as it starts
+
+The session shows the agent's exit code and the last lines it wrote to its error output (stderr):
+the cause is usually there, such as a missing sign-in or a package `npx` could not download.
+To see the whole output, run the agent's command yourself in the same folder, for example
+`npx -y @agentclientprotocol/codex-acp@2.3.0` or `opencode acp`. When it starts fine it waits
+silently for input (stop it with Ctrl+C).
+
 ## An agent cannot reach Workhub
 
 Agents talk to Workhub through its local control endpoint (Plan, flow maps, review). Every session

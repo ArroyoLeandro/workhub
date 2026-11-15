@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { BUILTIN_AGENTS } from '@workhub/core'
 import type * as nodePty from 'node-pty'
@@ -65,6 +68,26 @@ describe('TerminalRuntime PATH', () => {
     const sep = process.platform === 'win32' ? ';' : ':'
     expect(env![key]).toBe(['/opt/homebrew/bin:/usr/bin', '/bundle/claude'].join(sep))
     expect(env!['ACME']).toBe('1')
+  })
+})
+
+describe('TerminalRuntime on Windows', () => {
+  it('starts a command by its full path found on the session PATH, the bundled folder included', async () => {
+    const bundle = mkdtempSync(join(tmpdir(), 'wh-bundle-'))
+    writeFileSync(join(bundle, 'claude.exe'), '')
+    const files: string[] = []
+    const fakePty = { onData: () => ({ dispose() {} }), onExit: () => ({ dispose() {} }), kill() {}, write() {}, resize() {} }
+    const spawn = ((file: string) => (files.push(file), fakePty)) as unknown as typeof nodePty.spawn
+    try {
+      const rt = new TerminalRuntime({ spawn, platform: 'win32', path: () => join(bundle, 'empty'), fallbackPath: [bundle] })
+      const claude = { ...BUILTIN_AGENTS.find((a) => a.id === 'shell')!, command: 'claude', args: [] }
+      await rt.start({ sessionId: 'w1', agent: claude, account: null, cwd: process.cwd(), env: {} })
+      // A command found nowhere is passed as is, so node-pty reports it.
+      await rt.start({ sessionId: 'w2', agent: { ...claude, command: 'workhub-no-such-cli' }, account: null, cwd: process.cwd(), env: {} })
+      expect(files).toEqual([join(bundle, 'claude.exe'), 'workhub-no-such-cli'])
+    } finally {
+      rmSync(bundle, { recursive: true, force: true })
+    }
   })
 })
 

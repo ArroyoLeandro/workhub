@@ -316,6 +316,7 @@ export function buildHub(transport: HubTransport, platform: Platform): HubApi {
     },
     files: {
       openWindow: (path, cwd) => invoke('files:openWindow', path, cwd),
+      areFiles: (paths, cwd) => invoke('files:areFiles', paths, cwd),
       cacheImages: (dataUrls) => invoke('files:cacheImages', dataUrls),
       read: (path, known, forceText) => invoke('files:read', path, known ?? null, forceText === true),
       copyPath: (path) => send('files:copyPath', path),

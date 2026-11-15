@@ -368,6 +368,8 @@ export const en = {
   'chat.images.other': '{count} images',
   'chat.noticeEmpty': 'No output',
   'chat.copy': 'Copy',
+  'chat.openFile': 'Open {path}',
+  'chat.runCommand': 'Run in the Shell view',
   'chat.copied': 'Copied',
   'chat.showMore': 'Show more',
   'chat.showLess': 'Show less',

@@ -144,6 +144,28 @@ export class SessionDriver {
     return 'delivered'
   }
 
+  /**
+   * Types a command into the session's console once its agent has drawn its screen and gone quiet
+   * for `settleMs` (a console just opened ignores what arrives before its prompt is up). False when
+   * the console never got there within `timeoutMs`.
+   */
+  async typeInConsoleWhenSettled(sessionId: string, text: string, opts: { settleMs?: number; timeoutMs?: number; pollMs?: number } = {}): Promise<boolean> {
+    const settleMs = opts.settleMs ?? 1500
+    const pollMs = opts.pollMs ?? 250
+    const since = this.now()
+    const deadline = since + (opts.timeoutMs ?? 30_000)
+    while (this.now() < deadline) {
+      const view = this.sessions.list().find((v) => v.id === sessionId)
+      if (!view || view.state === 'stopped' || view.state === 'error') return false
+      const last = this.lastOutput.get(sessionId)
+      if (view.state === 'ready' && this.engineOf(view) === 'console' && last !== undefined && last >= since && this.now() - last >= settleMs) {
+        return (await this.deliver(sessionId, text)) === 'delivered'
+      }
+      await this.wait(pollMs)
+    }
+    return false
+  }
+
   async interrupt(sessionId: string): Promise<void> {
     await this.sessions.cancel(sessionId)
   }

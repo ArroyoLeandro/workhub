@@ -3,7 +3,7 @@ import type { SessionView } from '@shared/api'
 import type { MessageKey, Params } from '../i18n/translate'
 
 type Translate = (key: MessageKey, params?: Params) => string
-type CommandView = Pick<SessionView, 'id' | 'agentId' | 'adapter' | 'commands' | 'models' | 'modelControl'>
+type CommandView = Pick<SessionView, 'id' | 'agentId' | 'adapter' | 'commands' | 'models' | 'modelControl'> & Partial<Pick<SessionView, 'modes'>>
 
 /**
  * `/model` is Workhub's for agents it switches models on over ACP, so the header's picker follows.
@@ -13,9 +13,18 @@ function ownsModel(v: CommandView): boolean {
   return v.adapter !== 'native' && v.modelControl === true && (v.models?.length ?? 0) > 0
 }
 
+/**
+ * `/login` is Workhub's for Claude in the chat: Claude Code only signs in from its terminal UI (the
+ * SDK answers that the command is not available), so Workhub opens the console and types it there.
+ */
+function ownsLogin(v: CommandView): boolean {
+  return v.adapter === 'native' && (v.modes?.includes('console') ?? false)
+}
+
 /** The commands Workhub runs itself for this session, first in the menu. */
 export function workhubCommands(v: CommandView, t: Translate): SlashCommandInfo[] {
   const out: SlashCommandInfo[] = [{ name: 'rename', group: 'workhub', description: t('slash.rename.description'), argumentHint: t('slash.rename.hint') }]
+  if (ownsLogin(v)) out.push({ name: 'login', group: 'workhub', description: t('slash.login.description') })
   if (ownsModel(v)) out.push({ name: 'model', group: 'workhub', description: t('slash.model.description'), argumentHint: t('slash.model.hint') })
   return out
 }
@@ -28,6 +37,8 @@ export function sessionSlashCommands(v: CommandView, t: Translate): SlashCommand
 export interface WorkhubCommandActions {
   rename(sessionId: string, name: string): Promise<void>
   setModel(sessionId: string, modelId: string): Promise<void>
+  /** Opens the console and types `/login`; false when the console did not come up. */
+  login(sessionId: string): Promise<boolean>
   /** A line in the chat: what the command did, or why it did not run. */
   report(kind: 'done' | 'error', text: string): void
 }
@@ -49,6 +60,13 @@ export function runWorkhubCommand(v: CommandView, text: string, actions: Workhub
     actions.rename(v.id, newName).then(
       () => actions.report('done', t('slash.rename.done', { name: newName })),
       (e: unknown) => actions.report('error', t('slash.rename.failed', { message: e instanceof Error ? e.message : String(e) }))
+    )
+    return true
+  }
+  if (name === 'login' && ownsLogin(v)) {
+    actions.login(v.id).then(
+      (typed) => actions.report(typed ? 'done' : 'error', t(typed ? 'slash.login.done' : 'slash.login.timeout')),
+      (e: unknown) => actions.report('error', t('slash.login.failed', { message: e instanceof Error ? e.message : String(e) }))
     )
     return true
   }

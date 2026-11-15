@@ -1191,6 +1191,10 @@ function registerIpc(): void {
     if (typeof modeId !== 'string' || !modeId) throw new Error('a mode id is required')
     return sessions.setAgentMode(id, modeId)
   })
+  ipc.handle('sessions:login', async (_e, id: string) => {
+    await sessions.setMode(id, 'console', { now: true })
+    return driver.typeInConsoleWhenSettled(id, '/login')
+  })
   ipc.on('sessions:mcp', (_e, id: string, action: 'refresh' | 'reconnect' | 'enable' | 'disable', server?: string) => sessions.mcp(id, action, server))
   ipc.handle('sessions:subagent', (_e, id: string, subagentId: string) => sessions.subagent(id, subagentId))
   ipc.handle('sessions:revealFile', async (_e, id: string, path: string) => {
